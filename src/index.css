@@ -1,0 +1,38 @@
+body {
+  margin: 0;
+  font-family: "Arial", sans-serif;
+  background-color: #f8f5fa;
+  color: #4b4453;
+}
+
+h1,
+h2,
+h3 {
+  color: #4b4453;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Button Base Styles */
+button {
+  background-color: #a084ca;
+  color: #ffffff;
+  font-size: 1rem;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 15px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+button:hover {
+  background-color: #8675a9;
+  transform: scale(1.05);
+}
+
+.dashboard {
+  margin-top: 20px;
+}

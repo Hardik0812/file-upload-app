@@ -5,28 +5,36 @@ import { toast } from "react-toastify";
 import "./FileUploader.css";
 
 const FileUploader = () => {
-  const [files, setFiles] = useState([]);
+  const [file, setFile] = useState(null); // Single file state
   const [isSaving, setIsSaving] = useState(false);
 
   const onDrop = useCallback((acceptedFiles) => {
-    setFiles((prevFiles) => [
-      ...prevFiles,
-      ...acceptedFiles.map((file) => ({
-        file,
-        name: file.name,
-        size: (file.size / 1024).toFixed(2), // File size in KB
-        id: `${file.name}-${Date.now()}`, // Unique ID
-      })),
-    ]);
+    if (acceptedFiles.length > 1) {
+      toast.warn("Please upload only one file at a time.", {
+        position: "top-right",
+      });
+      return;
+    }
+
+    const newFile = acceptedFiles[0];
+    setFile({
+      file: newFile,
+      name: newFile.name,
+      size: (newFile.size / 1024).toFixed(2), // File size in KB
+      id: `${newFile.name}-${Date.now()}`, // Unique ID
+    });
   }, []);
 
-  const removeFile = (fileId) => {
-    setFiles((prevFiles) => prevFiles.filter((file) => file.id !== fileId));
+  const removeFile = () => {
+    setFile(null);
+    toast.info("File removed.", {
+      position: "top-right",
+    });
   };
 
   const saveFiles = async () => {
-    if (files.length === 0) {
-      toast.warn("No files to save. Please upload files first.", {
+    if (!file) {
+      toast.warn("No file to save. Please upload a file first.", {
         position: "top-right",
       });
       return;
@@ -35,20 +43,42 @@ const FileUploader = () => {
     setIsSaving(true);
 
     try {
-      // Mock API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const formData = new FormData();
+      formData.append("file", file.file);
 
-      // Simulate API call success
-      toast.success("Files saved successfully!", {
+      const response = await fetch(
+        "https://file-upload-api-three.vercel.app/upload",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        const errorResponse = await response.json();
+        const message = errorResponse?.detail || "Failed to upload the file";
+        throw new Error(message);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${file?.id || "New_File"}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success("File saved successfully and downloaded!", {
         position: "top-right",
       });
 
-      // Clear files after successful save
-      setFiles([]);
+      setFile(null);
     } catch (error) {
-      console.log("error: ", error);
-      // Simulate API call failure
-      toast.error("Failed to save files. Please try again.", {
+      const errorMessage =
+        error.message || "An unexpected error occurred. Please try again.";
+      toast.error(errorMessage, {
         position: "top-right",
       });
     } finally {
@@ -59,6 +89,7 @@ const FileUploader = () => {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: "image/*, .pdf, .doc, .docx",
+    maxFiles: 1,
   });
 
   return (
@@ -69,39 +100,33 @@ const FileUploader = () => {
       >
         <input {...getInputProps()} />
         {isDragActive ? (
-          <p>Drop the files here...</p>
+          <p>Drop the file here...</p>
         ) : (
-          <p>Drag & drop some files here, or click to select files</p>
+          <p>Drag & drop a file here, or click to select a file</p>
         )}
       </div>
 
       <div className="file-list">
-        {files.length > 0 && (
-          <>
-            <ul>
-              {files.map(({ name, size, id }) => (
-                <li key={id} className="file-item fade-in-up">
-                  <div className="file-info">
-                    <AiOutlineFile className="file-icon" />
-                    <span>{name}</span>
-                    <span className="file-size">({size} KB)</span>
-                  </div>
-                  <AiOutlineDelete
-                    className="remove-icon"
-                    onClick={() => removeFile(id)}
-                    title="Remove file"
-                  />
-                </li>
-              ))}
-            </ul>
-          </>
+        {file && (
+          <div className="file-item fade-in-up">
+            <div className="file-info">
+              <AiOutlineFile className="file-icon" />
+              <span>{file.name}</span>
+              <span className="file-size">({file.size} KB)</span>
+            </div>
+            <AiOutlineDelete
+              className="remove-icon"
+              onClick={removeFile}
+              title="Remove file"
+            />
+          </div>
         )}
         <button
           className={`save-btn ${isSaving ? "disabled" : ""}`}
           onClick={saveFiles}
-          disabled={isSaving}
+          disabled={isSaving || !file}
         >
-          {isSaving ? "Saving..." : "Save Files"}
+          {isSaving ? "Saving..." : "Save File"}
         </button>
       </div>
     </div>

@@ -20,8 +20,7 @@ RUN npm run build
 EXPOSE 5173
 
 # Set environment variables required by Google Cloud Run
-ENV PORT=5173
 ENV NODE_ENV=production
 
-# Start the Vite preview server
-CMD ["npm", "run", "preview"]
+# Use the Vite preview server, ensuring it binds to all network interfaces
+CMD ["sh", "-c", "npm run preview -- --host"]

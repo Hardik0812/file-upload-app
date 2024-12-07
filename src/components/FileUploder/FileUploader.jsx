@@ -47,7 +47,7 @@ const FileUploader = () => {
       formData.append("file", file.file);
 
       const response = await fetch(
-        "https://file-upload-api-three.vercel.app/upload",
+        "https://file-upload-api-112857677948.us-central1.run.app/upload",
         {
           method: "POST",
           body: formData,

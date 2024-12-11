@@ -98,3 +98,23 @@
 .remove-icon:hover {
   color: #a71d2a;
 }
+
+
+.loading-line {
+  position: relative;
+  height: 4px;
+  background: linear-gradient(90deg, #4caf50, #2196f3);
+  background-size: 200% 100%;
+  animation: loadingAnimation 2s infinite;
+  margin-bottom: 10px; /* Space above the button */
+  border-radius: 2px;
+}
+
+@keyframes loadingAnimation {
+  0% {
+    background-position: 0% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}

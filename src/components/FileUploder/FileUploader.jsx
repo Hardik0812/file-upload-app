@@ -7,6 +7,7 @@ import "./FileUploader.css";
 const FileUploader = () => {
   const [file, setFile] = useState(null); // Single file state
   const [isSaving, setIsSaving] = useState(false);
+  const [progress, setProgress] = useState(0); // Loader progress state
 
   const onDrop = useCallback((acceptedFiles) => {
     if (acceptedFiles.length > 1) {
@@ -41,6 +42,18 @@ const FileUploader = () => {
     }
 
     setIsSaving(true);
+    setProgress(1);
+
+    // Simulate slower loader progress
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 95) {
+          clearInterval(interval);
+          return prev;
+        }
+        return prev + 1; // Increment by 1 for slower progress
+      });
+    }, 200); // 200ms interval for smoother and slower updates
 
     try {
       const formData = new FormData();
@@ -82,7 +95,12 @@ const FileUploader = () => {
         position: "top-right",
       });
     } finally {
-      setIsSaving(false);
+      clearInterval(interval);
+      setProgress(100);
+      setTimeout(() => {
+        setIsSaving(false);
+        setProgress(0);
+      }, 500);
     }
   };
 
@@ -105,7 +123,7 @@ const FileUploader = () => {
           <p>Drag & drop a file here, or click to select a file</p>
         )}
       </div>
-
+  
       <div className="file-list">
         {file && (
           <div className="file-item fade-in-up">
@@ -121,16 +139,30 @@ const FileUploader = () => {
             />
           </div>
         )}
+  
+        {/* Show loading line when saving */}
+        {isSaving && <div className="loading-line"></div>}
+  
         <button
           className={`save-btn ${isSaving ? "disabled" : ""}`}
           onClick={saveFiles}
           disabled={isSaving || !file}
         >
-          {isSaving ? "Saving..." : "Save File"}
+          {isSaving ? `Saving... ${progress}%` : "Upload File"}
         </button>
+  
+        {isSaving && (
+          <div className="progress-bar">
+            <div
+              className="progress-bar-fill"
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
+        )}
       </div>
     </div>
   );
+  
 };
 
 export default FileUploader;

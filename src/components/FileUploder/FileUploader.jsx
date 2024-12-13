@@ -1,13 +1,62 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { AiOutlineFile, AiOutlineDelete } from "react-icons/ai";
 import { toast } from "react-toastify";
+import { io } from "socket.io-client"; // Import socket.io-client
 import "./FileUploader.css";
 
 const FileUploader = () => {
-  const [file, setFile] = useState(null); // Single file state
+  const [file, setFile] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [progress, setProgress] = useState(0); // Loader progress state
+  const [progress, setProgress] = useState(0);
+  const [socket, setSocket] = useState(null);
+
+  useEffect(() => {
+    const newSocket = io("https://your-socket-io-server-url");
+
+    newSocket.on("connect", () => {
+      console.log("Socket.IO connection established.");
+    });
+
+    // Listen for file upload progress from the server
+    newSocket.on("upload-progress", (data) => {
+      setProgress(data.progress); // Update progress based on server response
+    });
+
+    // Listen for upload completion from the server
+    newSocket.on("upload-complete", (data) => {
+      const fileLink = data.fileLink;
+      const fileName = data.fileName || "New_File.xlsx";
+
+      // Handle file download
+      const a = document.createElement("a");
+      a.href = fileLink;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      toast.success("File uploaded and downloaded successfully!", {
+        position: "top-right",
+      });
+
+      setFile(null); // Reset file after successful upload
+    });
+
+    // Listen for error messages
+    newSocket.on("error", (message) => {
+      toast.error(message || "An error occurred during file upload.", {
+        position: "top-right",
+      });
+    });
+
+    setSocket(newSocket);
+
+    // Cleanup the Socket.IO connection when the component unmounts
+    return () => {
+      newSocket.close();
+    };
+  }, []);
 
   const onDrop = useCallback((acceptedFiles) => {
     if (acceptedFiles.length > 1) {
@@ -21,8 +70,8 @@ const FileUploader = () => {
     setFile({
       file: newFile,
       name: newFile.name,
-      size: (newFile.size / 1024).toFixed(2), // File size in KB
-      id: `${newFile.name}-${Date.now()}`, // Unique ID
+      size: (newFile.size / 1024).toFixed(2),
+      id: `${newFile.name}-${Date.now()}`,
     });
   }, []);
 
@@ -41,67 +90,36 @@ const FileUploader = () => {
       return;
     }
 
-    setIsSaving(true);
-    setProgress(1);
-
-    // Simulate slower loader progress
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 95) {
-          clearInterval(interval);
-          return prev;
-        }
-        return prev + 1; // Increment by 1 for slower progress
-      });
-    }, 200); // 200ms interval for smoother and slower updates
-
-    try {
-      const formData = new FormData();
-      formData.append("file", file.file);
-
-      const response = await fetch(
-        "https://file-upload-api-112857677948.us-central1.run.app/upload",
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
-      if (!response.ok) {
-        const errorResponse = await response.json();
-        const message = errorResponse?.detail || "Failed to upload the file";
-        throw new Error(message);
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${file?.id || "New_File"}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-
-      toast.success("File saved successfully and downloaded!", {
+    if (!socket) {
+      toast.error("Socket connection is not available.", {
         position: "top-right",
       });
-
-      setFile(null);
-    } catch (error) {
-      const errorMessage =
-        error.message || "An unexpected error occurred. Please try again.";
-      toast.error(errorMessage, {
-        position: "top-right",
-      });
-    } finally {
-      clearInterval(interval);
-      setProgress(100);
-      setTimeout(() => {
-        setIsSaving(false);
-        setProgress(0);
-      }, 500);
+      return;
     }
+
+    setIsSaving(true);
+    setProgress(0);
+
+    // Create FormData object to send the file via Socket.IO
+    const formData = new FormData();
+    formData.append("file", file.file);
+
+    // Convert the file to binary data (Buffer) for Socket.IO transmission
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (reader.result) {
+        // Send the file and file metadata to the server
+        socket.emit("upload-file", {
+          fileName: file.name,
+          fileData: reader.result, // The ArrayBuffer containing the file
+        });
+
+        // We reset progress and await the server response
+        setProgress(0);
+      }
+    };
+
+    reader.readAsArrayBuffer(file.file); // Start reading the file as binary data
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -123,7 +141,7 @@ const FileUploader = () => {
           <p>Drag & drop a file here, or click to select a file</p>
         )}
       </div>
-  
+
       <div className="file-list">
         {file && (
           <div className="file-item fade-in-up">
@@ -139,10 +157,9 @@ const FileUploader = () => {
             />
           </div>
         )}
-  
-        {/* Show loading line when saving */}
+
         {isSaving && <div className="loading-line"></div>}
-  
+
         <button
           className={`save-btn ${isSaving ? "disabled" : ""}`}
           onClick={saveFiles}
@@ -150,7 +167,7 @@ const FileUploader = () => {
         >
           {isSaving ? `Saving... ${progress}%` : "Upload File"}
         </button>
-  
+
         {isSaving && (
           <div className="progress-bar">
             <div
@@ -162,7 +179,6 @@ const FileUploader = () => {
       </div>
     </div>
   );
-  
 };
 
 export default FileUploader;

@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { AiOutlineFile, AiOutlineDelete } from "react-icons/ai";
 import { toast } from "react-toastify";
+import axios from "axios"; // Import axios
 import "./FileUploader.css";
 
 const FileUploader = () => {
@@ -59,21 +60,23 @@ const FileUploader = () => {
       const formData = new FormData();
       formData.append("file", file.file);
 
-      const response = await fetch(
+      const response = await axios.post(
         "https://file-upload-api-112857677948.us-central1.run.app/upload",
+        formData,
         {
-          method: "POST",
-          body: formData,
+          headers: { "Content-Type": "multipart/form-data" },
+          timeout: 1800000,
+          onUploadProgress: (progressEvent) => {
+            const { loaded, total } = progressEvent;
+            const percent = Math.round((loaded * 100) / total);
+            setProgress(percent);
+          },
         }
       );
 
-      if (!response.ok) {
-        const errorResponse = await response.json();
-        const message = errorResponse?.detail || "Failed to upload the file";
-        throw new Error(message);
-      }
-
-      const blob = await response.blob();
+      const blob = new Blob([response.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -90,7 +93,9 @@ const FileUploader = () => {
       setFile(null);
     } catch (error) {
       const errorMessage =
-        error.message || "An unexpected error occurred. Please try again.";
+        error.response?.data?.detail ||
+        error.message ||
+        "An unexpected error occurred. Please try again.";
       toast.error(errorMessage, {
         position: "top-right",
       });
@@ -123,7 +128,7 @@ const FileUploader = () => {
           <p>Drag & drop a file here, or click to select a file</p>
         )}
       </div>
-  
+
       <div className="file-list">
         {file && (
           <div className="file-item fade-in-up">
@@ -139,10 +144,10 @@ const FileUploader = () => {
             />
           </div>
         )}
-  
+
         {/* Show loading line when saving */}
         {isSaving && <div className="loading-line"></div>}
-  
+
         <button
           className={`save-btn ${isSaving ? "disabled" : ""}`}
           onClick={saveFiles}
@@ -150,7 +155,7 @@ const FileUploader = () => {
         >
           {isSaving ? `Saving... ${progress}%` : "Upload File"}
         </button>
-  
+
         {isSaving && (
           <div className="progress-bar">
             <div
@@ -162,7 +167,6 @@ const FileUploader = () => {
       </div>
     </div>
   );
-  
 };
 
 export default FileUploader;

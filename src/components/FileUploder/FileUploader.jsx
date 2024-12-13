@@ -9,10 +9,12 @@ const FileUploader = () => {
   const [file, setFile] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [socket, setSocket] = useState(null);
+  console.log("progress: ", progress);
+  const [socket, setSocket] = useState(null); // Socket.IO connection state
 
   useEffect(() => {
-    const newSocket = io("https://your-socket-io-server-url");
+    // Establish Socket.IO connection when component mounts
+    const newSocket = io("https://your-socket-io-server-url"); // Replace with your server URL
 
     newSocket.on("connect", () => {
       console.log("Socket.IO connection established.");
@@ -67,6 +69,25 @@ const FileUploader = () => {
     }
 
     const newFile = acceptedFiles[0];
+
+    // Validate file type (Example: only images, PDFs, DOCX)
+    const validTypes = [
+      "image/jpeg",
+      "image/png",
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
+    if (!validTypes.includes(newFile.type)) {
+      toast.warn(
+        "Invalid file type. Only images, PDFs, and DOCX files are allowed.",
+        {
+          position: "top-right",
+        }
+      );
+      return;
+    }
+
     setFile({
       file: newFile,
       name: newFile.name,
@@ -114,12 +135,11 @@ const FileUploader = () => {
           fileData: reader.result, // The ArrayBuffer containing the file
         });
 
-        // We reset progress and await the server response
         setProgress(0);
       }
     };
 
-    reader.readAsArrayBuffer(file.file); // Start reading the file as binary data
+    reader.readAsArrayBuffer(file.file);
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({

@@ -1,66 +1,16 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { AiOutlineFile, AiOutlineDelete } from "react-icons/ai";
 import { toast } from "react-toastify";
-import { io } from "socket.io-client"; // Import socket.io-client
+import io from "socket.io-client";
 import "./FileUploader.css";
 
 const FileUploader = () => {
   const [file, setFile] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [progress, setProgress] = useState(0);
-  console.log("progress: ", progress);
-  const [socket, setSocket] = useState(null); // Socket.IO connection state
 
-  useEffect(() => {
-    // Establish Socket.IO connection when component mounts
-    const newSocket = io("https://your-socket-io-server-url"); // Replace with your server URL
-
-    newSocket.on("connect", () => {
-      console.log("Socket.IO connection established.");
-    });
-
-    // Listen for file upload progress from the server
-    newSocket.on("upload-progress", (data) => {
-      setProgress(data.progress); // Update progress based on server response
-    });
-
-    // Listen for upload completion from the server
-    newSocket.on("upload-complete", (data) => {
-      const fileLink = data.fileLink;
-      const fileName = data.fileName || "New_File.xlsx";
-
-      // Handle file download
-      const a = document.createElement("a");
-      a.href = fileLink;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-
-      toast.success("File uploaded and downloaded successfully!", {
-        position: "top-right",
-      });
-
-      setFile(null); // Reset file after successful upload
-    });
-
-    // Listen for error messages
-    newSocket.on("error", (message) => {
-      toast.error(message || "An error occurred during file upload.", {
-        position: "top-right",
-      });
-    });
-
-    setSocket(newSocket);
-
-    // Cleanup the Socket.IO connection when the component unmounts
-    return () => {
-      newSocket.close();
-    };
-  }, []);
-
-  const onDrop = useCallback((acceptedFiles) => {
+  const onDrop = (acceptedFiles) => {
     if (acceptedFiles.length > 1) {
       toast.warn("Please upload only one file at a time.", {
         position: "top-right",
@@ -69,32 +19,13 @@ const FileUploader = () => {
     }
 
     const newFile = acceptedFiles[0];
-
-    // Validate file type (Example: only images, PDFs, DOCX)
-    const validTypes = [
-      "image/jpeg",
-      "image/png",
-      "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    ];
-    if (!validTypes.includes(newFile.type)) {
-      toast.warn(
-        "Invalid file type. Only images, PDFs, and DOCX files are allowed.",
-        {
-          position: "top-right",
-        }
-      );
-      return;
-    }
-
     setFile({
       file: newFile,
       name: newFile.name,
       size: (newFile.size / 1024).toFixed(2),
       id: `${newFile.name}-${Date.now()}`,
     });
-  }, []);
+  };
 
   const removeFile = () => {
     setFile(null);
@@ -111,35 +42,61 @@ const FileUploader = () => {
       return;
     }
 
-    if (!socket) {
-      toast.error("Socket connection is not available.", {
-        position: "top-right",
-      });
-      return;
-    }
-
     setIsSaving(true);
     setProgress(0);
 
-    // Create FormData object to send the file via Socket.IO
-    const formData = new FormData();
-    formData.append("file", file.file);
+    // Connect to Socket.IO when starting the upload
+    const socket = io("https://your-socket-io-server-url"); // Replace with your server URL
 
-    // Convert the file to binary data (Buffer) for Socket.IO transmission
+    socket.on("connect", () => {
+      console.log("Socket.IO connection established.");
+    });
+
     const reader = new FileReader();
     reader.onloadend = () => {
       if (reader.result) {
-        // Send the file and file metadata to the server
         socket.emit("upload-file", {
           fileName: file.name,
           fileData: reader.result, // The ArrayBuffer containing the file
         });
 
-        setProgress(0);
+        socket.on("upload-progress", (data) => {
+          setProgress(data.progress); // Update progress
+        });
+
+        socket.on("upload-complete", (data) => {
+          const fileLink = data.fileLink;
+          const fileName = data.fileName || "New_File.xlsx";
+
+          // Handle file download
+          const a = document.createElement("a");
+          a.href = fileLink;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+
+          toast.success("File uploaded and downloaded successfully!", {
+            position: "top-right",
+          });
+
+          setFile(null); // Reset file after successful upload
+        });
+
+        socket.on("error", (message) => {
+          toast.error(message || "An error occurred during file upload.", {
+            position: "top-right",
+          });
+        });
       }
     };
 
-    reader.readAsArrayBuffer(file.file);
+    reader.readAsArrayBuffer(file.file); // Start reading the file as binary data
+
+    // Close the socket after the upload completes
+    socket.on("upload-complete", () => {
+      socket.close(); // Close the connection once the upload is complete
+    });
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({

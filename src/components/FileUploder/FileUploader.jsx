@@ -153,6 +153,7 @@ const FileUploader = () => {
               <span className="file-size">({file.size} KB)</span>
             </div>
             <AiOutlineDelete
+              disabled={isSaving}
               className="remove-icon"
               onClick={removeFile}
               title="Remove file"

@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { AiOutlineFile, AiOutlineDelete } from "react-icons/ai";
 import { toast } from "react-toastify";
@@ -8,6 +8,27 @@ const FileUploader = () => {
   const [file, setFile] = useState(null); // Single file state
   const [isSaving, setIsSaving] = useState(false);
   const [progress, setProgress] = useState(0); // Loader progress state
+
+  // Handle the beforeunload event
+  useEffect(() => {
+    const handleBeforeUnload = (event) => {
+      if (isSaving) {
+        event.preventDefault();
+        event.returnValue =
+          "File upload is in progress. Are you sure you want to leave?";
+      }
+    };
+
+    if (isSaving) {
+      window.addEventListener("beforeunload", handleBeforeUnload);
+    } else {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    }
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [isSaving]);
 
   const onDrop = useCallback((acceptedFiles) => {
     if (acceptedFiles.length > 1) {
@@ -44,7 +65,6 @@ const FileUploader = () => {
     setIsSaving(true);
     setProgress(1);
 
-    // Simulate slower loader progress
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 95) {
@@ -123,7 +143,7 @@ const FileUploader = () => {
           <p>Drag & drop a file here, or click to select a file</p>
         )}
       </div>
-  
+
       <div className="file-list">
         {file && (
           <div className="file-item fade-in-up">
@@ -139,10 +159,10 @@ const FileUploader = () => {
             />
           </div>
         )}
-  
+
         {/* Show loading line when saving */}
         {isSaving && <div className="loading-line"></div>}
-  
+
         <button
           className={`save-btn ${isSaving ? "disabled" : ""}`}
           onClick={saveFiles}
@@ -150,7 +170,7 @@ const FileUploader = () => {
         >
           {isSaving ? `Saving... ${progress}%` : "Upload File"}
         </button>
-  
+
         {isSaving && (
           <div className="progress-bar">
             <div
@@ -162,7 +182,6 @@ const FileUploader = () => {
       </div>
     </div>
   );
-  
 };
 
 export default FileUploader;

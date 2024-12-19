@@ -3,9 +3,10 @@ import { useDropzone } from "react-dropzone";
 import { AiOutlineFile, AiOutlineDelete } from "react-icons/ai";
 import { toast } from "react-toastify";
 import "./FileUploader.css";
+// import Navbar from "../Navbar/Navbar";
 
 const FileUploader = () => {
-  const [file, setFile] = useState(null); // Single file state
+  const [file, setFile] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [progress, setProgress] = useState(0); // Loader progress state
 
@@ -114,6 +115,10 @@ const FileUploader = () => {
       toast.error(errorMessage, {
         position: "top-right",
       });
+      if (error?.response?.status === 401) {
+        sessionStorage.removeItem("authToken");
+        window.location.href = "/login";
+      }
     } finally {
       clearInterval(interval);
       setProgress(100);
@@ -131,57 +136,61 @@ const FileUploader = () => {
   });
 
   return (
-    <div className="file-uploader">
-      <div
-        {...getRootProps()}
-        className={`dropzone ${isDragActive ? "active" : ""}`}
-      >
-        <input {...getInputProps()} />
-        {isDragActive ? (
-          <p>Drop the file here...</p>
-        ) : (
-          <p>Drag & drop a file here, or click to select a file</p>
-        )}
-      </div>
-
-      <div className="file-list">
-        {file && (
-          <div className="file-item fade-in-up">
-            <div className="file-info">
-              <AiOutlineFile className="file-icon" />
-              <span>{file.name}</span>
-              <span className="file-size">({file.size} KB)</span>
-            </div>
-            <AiOutlineDelete
-              disabled={isSaving}
-              className="remove-icon"
-              onClick={removeFile}
-              title="Remove file"
-            />
-          </div>
-        )}
-
-        {/* Show loading line when saving */}
-        {isSaving && <div className="loading-line"></div>}
-
-        <button
-          className={`save-btn ${isSaving ? "disabled" : ""}`}
-          onClick={saveFiles}
-          disabled={isSaving || !file}
+    <>
+      <div className="file-uploader">
+        <div
+          {...getRootProps()}
+          className={`dropzone ${isDragActive ? "active" : ""}`}
         >
-          {isSaving ? `Saving... ${progress}%` : "Upload File"}
-        </button>
+          <input {...getInputProps()} />
+          {isDragActive ? (
+            <p>Drop the file here...</p>
+          ) : (
+            <p>Drag & drop a file here, or click to select a file</p>
+          )}
+        </div>
 
-        {isSaving && (
-          <div className="progress-bar">
-            <div
-              className="progress-bar-fill"
-              style={{ width: `${progress}%` }}
-            ></div>
-          </div>
-        )}
+        <div className="file-list">
+          {file && (
+            <div className="file-item fade-in-up">
+              <div className="file-info">
+                <AiOutlineFile className="file-icon" />
+                <span>{file.name}</span>
+                <span className="file-size">({file.size} KB)</span>
+              </div>
+              {/* {isSaving && ( */}
+              <AiOutlineDelete
+                disabled={isSaving || !file}
+                className="remove-icon"
+                onClick={removeFile}
+                title="Remove file"
+              />
+              {/* )} */}
+            </div>
+          )}
+
+          {/* Show loading line when saving */}
+          {isSaving && <div className="loading-line"></div>}
+
+          <button
+            className={`save-btn ${isSaving ? "disabled" : ""}`}
+            onClick={saveFiles}
+            disabled={isSaving || !file}
+          >
+            {isSaving ? `Saving... ${progress}%` : "Upload File"}
+          </button>
+
+          {isSaving && (
+            <div className="progress-bar">
+              <div
+                className="progress-bar-fill"
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

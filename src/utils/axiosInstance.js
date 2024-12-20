@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = "https://dummyjson.com";
+const API_BASE_URL = "http://127.0.0.1:8000";
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -30,7 +30,7 @@ axiosInstance.interceptors.response.use(
 export default axiosInstance;
 
 export const endPoints = {
-  login: "/auth/login",
-  resetPassword: "/auth/reset-password",
-  createNewPassword: "/auth/create-new-password",
+  login: "/login",
+  resetPassword: "/send_reset_link",
+  createNewPassword: "/reset_password",
 };

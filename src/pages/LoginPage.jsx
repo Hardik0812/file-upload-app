@@ -11,7 +11,7 @@ const LoginPage = () => {
   const onSubmit = async (data) => {
     try {
       const response = await axiosInstance.post(endPoints.login, data);
-      sessionStorage.setItem("authToken", response.data.accessToken);
+      sessionStorage.setItem("authToken", response.data.token);
       toast.success("Login successful!");
       navigate("/dashboard");
     } catch (error) {
@@ -40,6 +40,11 @@ const LoginPage = () => {
               type="password"
               placeholder="Enter your password"
             />
+          </div>
+          <div>
+<div>
+          <p className="forget-text" onClick={() => navigate("/reset-password")}> Forget Password?</p>
+  </div>
           </div>
           <button type="submit">Login</button>
         </form>

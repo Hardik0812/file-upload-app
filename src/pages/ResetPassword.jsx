@@ -1,15 +1,18 @@
 import { useForm } from "react-hook-form";
 import axiosInstance, { endPoints } from "../utils/axiosInstance";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 import "./LoginSignup.css";
 
 const ResetPassword = () => {
+  const navigate= useNavigate()
   const { register, handleSubmit } = useForm();
 
   const onSubmit = async (data) => {
     try {
       await axiosInstance.post(endPoints.resetPassword, data);
       toast.success("Password reset email sent!");
+      navigate("/login")
     } catch (error) {
       console.log("error: ", error);
       toast.error("Failed to send reset email.");

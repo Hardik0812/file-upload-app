@@ -9,11 +9,20 @@ const CreateNewPassword = () => {
   const token = searchParams.get("token");
 
   const onSubmit = async (data) => {
+
+    const params ={
+      new_password:data.password
+    }
     try {
-      await axiosInstance.post(endPoints.forgotPassword, {
-        ...data,
-        token,
-      });
+      await axiosInstance.post(
+        endPoints.createNewPassword,
+        { ...params },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, 
+          },
+        }
+      );
       toast.success("Password reset successfully!");
       window.location.href = "/login";
     } catch (error) {
@@ -21,7 +30,6 @@ const CreateNewPassword = () => {
       toast.error("Failed to reset password.");
     }
   };
-
   return (
     <div className="auth-layout">
       <div className="form-container">

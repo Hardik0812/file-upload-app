@@ -14,9 +14,6 @@ const Navbar = () => {
       <h1 className="logo">Files</h1>
       <ul className="nav-links">
         <li>
-          <Link to="/dashboard">Dashboard</Link>
-        </li>
-        <li>
           <button className="logout-btn" onClick={handleLogout}>
             Logout
           </button>

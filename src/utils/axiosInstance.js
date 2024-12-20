@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://127.0.0.1:8000";
+export const API_BASE_URL =
+  "https://file-upload-api-112857677948.us-central1.run.app";
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,

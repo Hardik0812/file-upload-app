@@ -31,6 +31,6 @@ export default axiosInstance;
 
 export const endPoints = {
   login: "/login",
-  resetPassword: "/send_reset_link",
+  forgotPassword: "/send_reset_link",
   createNewPassword: "/reset_password",
 };

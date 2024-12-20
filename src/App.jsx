@@ -2,8 +2,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import LoginPage from "./pages/LoginPage";
 import AuthGuard from "./guard/AuthGuard";
+import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
-import CreateNewPassword from "./pages/CreateNewPassword";
 import NotFound from "./pages/NotFound";
 
 const App = () => {
@@ -11,8 +11,8 @@ const App = () => {
     <Router>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/create-password" element={<CreateNewPassword />} />
         <Route
           path="/dashboard"
           element={
